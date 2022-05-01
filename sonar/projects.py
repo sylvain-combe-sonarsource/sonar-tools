@@ -586,6 +586,17 @@ Is this normal ?", gr['name'], str(self.key))
                 continue
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
+        s = settings.get_new_code_period(self.endpoint, self)
+        if s.inherited:
+            return json_data
+        (categ, subcateg) = s.category()
+        util.update_json(json_data, categ, subcateg, s.to_json())
+        p = {}
+        for b in self.get_branches():
+            s = b.new_code_period()
+            if not s.inherited:
+                p[b.name] = s.to_json()
+        util.update_json(json_data, categ, subcateg, p)
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 

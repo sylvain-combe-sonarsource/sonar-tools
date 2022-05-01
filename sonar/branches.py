@@ -26,7 +26,7 @@
 import datetime
 import pytz
 import requests.utils
-from sonar import projects, measures, components, syncer
+from sonar import projects, measures, components, syncer, settings
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
 
@@ -146,6 +146,9 @@ class Branch(components.Component):
             + self.__audit_zero_loc()
         )
 
+    def new_code_period(self):
+        util.logger.debug("Getting branch %s new code", str(self))
+        return settings.get_object(key=settings.NEW_CODE, endpoint=self.endpoint, project=self.project, branch=self.name)
 
 def _uuid(project_key, branch_name):
     return f"{project_key} {branch_name}"

@@ -48,9 +48,10 @@ _INLINE_SETTINGS = (
 
 class Setting(sqobject.SqObject):
 
-    def __init__(self, key, endpoint, project=None, data=None):
+    def __init__(self, key, endpoint, project=None, branch=None, data=None):
         super().__init__(key, endpoint)
         self.project = project
+        self.branch = branch
         self.value = None
         self.inherited = None
         if data is None:
@@ -58,6 +59,8 @@ class Setting(sqobject.SqObject):
                 params = {}
                 if project:
                     params['project'] = project.key
+                    if branch:
+                        params['branch'] = branch
                 resp = self.get(api='new_code_periods/show', params=params)
                 data = json.loads(resp.text)
             else:
@@ -83,6 +86,7 @@ class Setting(sqobject.SqObject):
         if 'inherited' in data:
             self.inherited = data['inherited']
         elif self.key == NEW_CODE:
+            util.json_dump_debug("NEW CODE", data)
             self.inherited = False
         elif 'parentValues' in data or 'parentValue' in data or 'parentFieldValues' in data:
             self.inherited = False
@@ -94,7 +98,7 @@ class Setting(sqobject.SqObject):
             self.inherited = True
 
     def uuid(self):
-        return _uuid_p(self.key, self.project)
+        return _uuid_p(self.key, self.project, self.branch)
 
     def __str__(self):
         if self.project is None:
@@ -147,10 +151,10 @@ class Setting(sqobject.SqObject):
         return ('general', None)
 
 
-def get_object(key, endpoint=None, data=None, project=None):
-    uu = _uuid_p(key, project)
+def get_object(key, endpoint=None, data=None, project=None, branch=None):
+    uu = _uuid_p(key, project, branch)
     if uu not in _SETTINGS:
-        _ = Setting(key=key, endpoint=endpoint, data=data, project=project)
+        _ = Setting(key=key, endpoint=endpoint, data=data, project=project, branch=branch)
     return _SETTINGS[uu]
 
 
@@ -188,8 +192,7 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
             continue
         o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
         settings_dict[o.key] = o
-    o = get_new_code_period(endpoint, project)
-    settings_dict[o.key] = o
+
     return settings_dict
 
 
@@ -201,14 +204,17 @@ def get_new_code_period(endpoint, project):
     return get_object(key=NEW_CODE, endpoint=endpoint, project=project)
 
 
-def uuid(key, project_key=None):
+def uuid(key, project_key=None, branch=None):
     """Computes uuid for a setting"""
     if project_key is None:
         return key
-    else:
+    elif branch is None:
         return f"{key}#{project_key}"
+    else:
+        return f"{key}#{project_key}#{branch}"
 
-def _uuid_p(key, project):
+
+def _uuid_p(key, project, branch=None):
     """Computes uuid for a setting"""
     pk = None if project is None else project.key
-    return uuid(key, pk)
+    return uuid(key, pk, branch)
