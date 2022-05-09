@@ -56,6 +56,21 @@ class DevopsPlatform(sqobject.SqObject):
         return json_data
 
 
+class DevopsSettings:
+
+    def __init__(self, key=None, alm_type=None, repo=None, alm_project=None, data=None):
+        self.key = key
+        self.alm_type = alm_type
+        self.repo = repo
+        self.alm_project = alm_project
+        self.json = data
+        if alm_type == 'bitbucketcloud':
+            self.url = 'https://bitbucket.org'
+        else:
+            self.url = data['url']
+        util.logger.debug("Created %s", str(self))
+
+
 def get_all(endpoint):
     """Gets several settings as bulk (returns a dict)"""
     object_list = {}
