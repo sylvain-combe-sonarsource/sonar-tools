@@ -31,7 +31,6 @@ API_RULES_SEARCH = 'rules/search'
 class Rule(sq.SqObject):
     def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        self.key = key
         self.severity = data['severity']
         self.tags = data['tags']
         self.sys_tags = data['sysTags']
@@ -46,6 +45,19 @@ class Rule(sq.SqObject):
         self.created_at = data['createdAt']
         self.is_template = data['isTemplate']
         self.template_key = data.get('templateKey', None)
+        self._json = data
+        self._overrides = None
+
+    def hash(self):
+        # FIXME: Add rule params in hash
+        if self._overrides is not None:
+            for p in self._overrides['params']:
+                str_p += f"{p['key']}={p['value']}"
+        return f"{self.repo}:{self.key}-{self.severity}"
+
+    def override(self, new_severity, params):
+        self.severity= new_severity
+        self._overrides = params
 
 
 def get_facet(facet, endpoint=None):
@@ -65,13 +77,14 @@ def count(endpoint=None, params=None):
 
 
 def get_list(endpoint, params=None):
+    utilities.logger.info("Getting rules list")
     new_params = {} if params is None else params.copy()
     new_params.update({'is_template': 'false', 'include_external': 'true', 'ps': 500})
     page, nb_pages = 1, 1
     rule_list = {}
     while page <= nb_pages:
         params['p'] = page
-        data = json.loads(env.get(API_RULES_SEARCH, ctxt=endpoint, params=new_params).text)
+        data = json.loads(endpoint.get(API_RULES_SEARCH, params=new_params).text)
         for r in data['rules']:
             rule_list[r['key']] = Rule(r['key'], endpoint=endpoint, data=r)
         nb_pages = utilities.int_div_ceil(data['total'], data['ps'])
