@@ -41,6 +41,15 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
+# REcording modes can be
+_RECORDING_MODE_IDLE = 0
+_RECORDING_MODE_ACTIVE = 1
+_RECORDING_MODE_REPLAY = 2
+
+_RECORDING_MODE = _RECORDING_MODE_IDLE
+_RECORDED_EVENTS = {}
+_RECORDING_FILE = "tests/recording.json"
+
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -127,6 +136,9 @@ class Environment:
                 _log_and_exit(r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
+        if _RECORDING_MODE == _RECORDING_MODE_ACTIVE:
+            global _RECORDED_EVENTS
+            _RECORDED_EVENTS[self.urlstring(api, params)] = r.text
         return r
 
     def post(self, api, params=None):
@@ -597,3 +609,31 @@ def _get_multiple_values(n, setting, severity, domain):
     values[n - 1] = typ.to_type(values[n - 1])
     # TODO Handle case of too many values
     return values
+
+
+def start_recording():
+    global _RECORDING_MODE
+    _RECORDING_MODE = _RECORDING_MODE_ACTIVE
+
+
+def stop_recording():
+    write_recording()
+    global _RECORDING_MODE
+    _RECORDING_MODE = _RECORDING_MODE_IDLE
+
+
+def start_replay():
+    load_recording()
+    global _RECORDING_MODE
+    _RECORDING_MODE = _RECORDING_MODE_REPLAY
+
+
+def write_recording(file=_RECORDING_FILE):
+    with util.open_file(file) as fd:
+        print(util.json_dump(_RECORDED_EVENTS), file=fd)
+
+
+def load_recording(file=_RECORDING_FILE):
+    global _RECORDED_EVENTS
+    with open(file, 'r', encoding='utf-8') as fd:
+        _RECORDED_EVENTS = json.loads(fd.read())
