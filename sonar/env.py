@@ -635,5 +635,4 @@ def write_recording(file=_RECORDING_FILE):
 
 def load_recording(file=_RECORDING_FILE):
     global _RECORDED_EVENTS
-    with open(file, 'r', encoding='utf-8') as fd:
-        _RECORDED_EVENTS = json.loads(fd.read())
+    _RECORDED_EVENTS = util.load_json_file(file)
