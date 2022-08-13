@@ -28,7 +28,7 @@ python setup.py bdist_wheel
 
 :: Deploy locally for tests
 echo y | pip uninstall sonar-tools
-pip install dist/sonar_tools-2.4-py3-none-any.whl
+pip install dist/sonar_tools-2.4.1-py3-none-any.whl
 
 :: sphinx-build -b html api-doc/source api-doc/build
 
