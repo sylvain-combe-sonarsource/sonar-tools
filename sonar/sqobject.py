@@ -59,9 +59,9 @@ def __search_thread(queue):
     while not queue.empty():
         (endpoint, api, objects, key_field, returned_field, object_class, params, page) = queue.get()
         page_params = params.copy()
-        page_params["page"] = page
+        page_params["p"] = page
         utilities.logger.debug("Threaded search: API = %s params = %s", api, str(params))
-        data = json.loads(endpoint.get(api, params=params).text)
+        data = json.loads(endpoint.get(api, params=page_params).text)
         for obj in data[returned_field]:
             if object_class.__name__ in ("Portfolio", "Groups"):
                 objects[obj[key_field]] = object_class.load(name=obj[key_field], endpoint=endpoint, data=obj)
@@ -92,7 +92,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         return objects_list
     q = Queue(maxsize=0)
     for page in range(2, nb_pages + 1):
-        q.put((endpoint, api, objects_list, key_field, returned_field, object_class, params, page))
+        q.put((endpoint, api, objects_list, key_field, returned_field, object_class, new_params, page))
     for i in range(threads):
         utilities.logger.debug("Starting %s search thread %d", object_class.__name__, i)
         worker = Thread(target=__search_thread, args=[q])
